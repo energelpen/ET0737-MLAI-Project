@@ -1,0 +1,15 @@
+# --- Large data files (keep out of git; ship separately as the dataset zip) ---
+data/raw/2015.csv          # 517 MB extracted raw BRFSS survey
+*.csv
+data/raw/*.zip             # 79 MB raw source archive
+archive/                   # old readmission project + its dataset (not part of submission)
+
+# --- Jupyter / Python cruft ---
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+.virtual_documents/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
