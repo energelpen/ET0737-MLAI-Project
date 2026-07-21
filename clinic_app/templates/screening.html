@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}ClearCheck · Screening questionnaire{% endblock %}
+
+{% macro field_error(key) %}
+  {% if errors.get(key) %}
+    <p class="mt-1.5 text-xs font-medium text-risk-high">{{ errors[key] }}</p>
+  {% endif %}
+{% endmacro %}
+
+{% macro render_field(f) %}
+  {% set key = f.key %}
+  {% set val = values.get(key) %}
+  {% set invalid = errors.get(key) %}
+  <div class="py-4">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <label class="text-sm font-medium text-slate-700 dark:text-slate-200" for="{{ key }}">
+        {{ f.label }}
+        {% if f.help %}<span class="mt-0.5 block text-xs font-normal text-slate-400">{{ f.help }}</span>{% endif %}
+      </label>
+
+      <div class="shrink-0">
+        {% if f.type in ['yesno', 'radio'] %}
+          <div class="inline-flex overflow-hidden rounded-xl border {{ 'border-risk-high' if invalid else 'border-slate-200 dark:border-slate-700' }}">
+            {% for opt_val, opt_label in f.options %}
+              <label class="relative">
+                <input type="radio" name="{{ key }}" value="{{ opt_val }}" class="peer sr-only"
+                       {% if val is not none and val|string == opt_val|string %}checked{% endif %}>
+                <span class="block cursor-pointer px-5 py-2 text-sm font-medium text-slate-500
+                             transition peer-checked:bg-brand-600 peer-checked:text-white
+                             hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800
+                             peer-checked:hover:bg-brand-600">{{ opt_label }}</span>
+              </label>
+            {% endfor %}
+          </div>
+
+        {% elif f.type == 'select' %}
+          <select id="{{ key }}" name="{{ key }}"
+                  class="w-full min-w-[15rem] rounded-xl border bg-white px-3 py-2 text-sm
+                         text-slate-700 focus:border-brand-500 focus:outline-none focus:ring-2
+                         focus:ring-brand-200 dark:bg-slate-800 dark:text-slate-100
+                         {{ 'border-risk-high' if invalid else 'border-slate-200 dark:border-slate-700' }}">
+            <option value="" {% if val is none or val == '' %}selected{% endif %} disabled>Select…</option>
+            {% for code, label in f.options.items() %}
+              <option value="{{ code }}" {% if val is not none and val|string == code|string %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+
+        {% elif f.type == 'number' %}
+          <div class="flex items-center gap-2">
+            <input id="{{ key }}" name="{{ key }}" type="number" inputmode="numeric"
+                   min="{{ f.min }}" max="{{ f.max }}" {% if f.unit != 'cm' and f.unit != 'kg' %}step="1"{% else %}step="0.1"{% endif %}
+                   value="{{ val if val is not none else '' }}" placeholder="{{ f.min }}–{{ f.max }}"
+                   class="w-28 rounded-xl border bg-white px-3 py-2 text-sm text-slate-700
+                          focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200
+                          dark:bg-slate-800 dark:text-slate-100
+                          {{ 'border-risk-high' if invalid else 'border-slate-200 dark:border-slate-700' }}">
+            <span class="text-sm text-slate-400">{{ f.unit }}</span>
+          </div>
+
+        {% else %} {# text #}
+          <input id="{{ key }}" name="{{ key }}" type="text"
+                 value="{{ val if val is not none else '' }}" placeholder="Optional"
+                 class="w-full min-w-[15rem] rounded-xl border border-slate-200 bg-white px-3 py-2
+                        text-sm text-slate-700 focus:border-brand-500 focus:outline-none
+                        focus:ring-2 focus:ring-brand-200 dark:border-slate-700 dark:bg-slate-800
+                        dark:text-slate-100">
+        {% endif %}
+      </div>
+    </div>
+    {{ field_error(key) }}
+  </div>
+{% endmacro %}
+
+{% block content %}
+<div class="fade-in">
+  <div class="mb-6">
+    <a href="{{ url_for('clinic.landing') }}" class="text-sm text-slate-400 hover:text-slate-600">← Back</a>
+    <h1 class="mt-2 text-2xl font-bold tracking-tight">Diabetes-risk questionnaire</h1>
+    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+      Please answer every question honestly — there are no right or wrong answers. Your
+      responses stay within the clinic.
+    </p>
+  </div>
+
+  <div class="grid gap-8 lg:grid-cols-[220px_1fr]">
+    <!-- section nav -->
+    <aside class="hidden lg:block">
+      <nav class="sticky top-24 space-y-1">
+        {% for sec in sections %}
+          <a href="#sec-{{ sec.id }}"
+             class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-500
+                    hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800">
+            <span>{{ sec.icon }}</span>{{ sec.title }}
+          </a>
+        {% endfor %}
+      </nav>
+    </aside>
+
+    <form method="post" action="{{ url_for('clinic.screening') }}" class="space-y-6" novalidate>
+      {% for sec in sections %}
+        <section id="sec-{{ sec.id }}"
+                 class="scroll-mt-24 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm
+                        dark:border-slate-800 dark:bg-slate-900">
+          <div class="mb-2 flex items-center gap-3">
+            <span class="grid h-10 w-10 place-items-center rounded-xl bg-brand-50 text-xl dark:bg-slate-800">{{ sec.icon }}</span>
+            <div>
+              <h2 class="text-lg font-semibold">{{ sec.title }}</h2>
+              <p class="text-xs text-slate-400">{{ sec.blurb }}</p>
+            </div>
+          </div>
+          <div class="divide-y divide-slate-100 dark:divide-slate-800">
+            {% for f in sec.fields %}{{ render_field(f) }}{% endfor %}
+          </div>
+        </section>
+      {% endfor %}
+
+      <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5
+                  shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <p class="text-xs text-slate-400">By submitting you consent to the clinic using these
+          answers for screening.</p>
+        <button type="submit"
+                class="rounded-xl bg-brand-600 px-6 py-3 font-semibold text-white shadow-sm
+                       transition hover:bg-brand-700">
+          Submit &amp; see my result
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

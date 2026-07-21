@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}{{ settings.clinic_name }} · Sign in{% endblock %}
+
+{% block content %}
+<div class="fade-in mx-auto max-w-md">
+  <div class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div class="mb-6 text-center">
+      <span class="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-brand-600 text-2xl text-white">🔒</span>
+      <h1 class="mt-4 text-xl font-bold tracking-tight">Sign in</h1>
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Patients, clinicians and administrators.</p>
+    </div>
+
+    <form method="post" class="space-y-4">
+      <div>
+        <label for="username" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Username</label>
+        <input id="username" name="username" type="text" autocomplete="username" required autofocus
+               class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm
+                      focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200
+                      dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+      </div>
+      <div>
+        <label for="password" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required
+               class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm
+                      focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200
+                      dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+      </div>
+      <button type="submit"
+              class="w-full rounded-xl bg-brand-600 px-4 py-2.5 font-semibold text-white hover:bg-brand-700">
+        Sign in
+      </button>
+    </form>
+
+    <p class="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
+      New patient?
+      <a href="{{ url_for('clinic.register') }}" class="font-medium text-brand-600 hover:underline dark:text-brand-400">Create an account</a>
+    </p>
+
+    <div class="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-center text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+      Demo staff logins —
+      <span class="font-mono text-slate-700 dark:text-slate-200">admin</span> / <span class="font-mono">admin123</span> ·
+      <span class="font-mono text-slate-700 dark:text-slate-200">doctor</span> / <span class="font-mono">clinic123</span>
+    </div>
+  </div>
+</div>
+{% endblock %}

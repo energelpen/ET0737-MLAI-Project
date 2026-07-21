@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ settings.clinic_name }} · Create account{% endblock %}
+
+{% macro field(name, label, type, help='') %}
+  <div>
+    <label for="{{ name }}" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ label }}</label>
+    <input id="{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ values.get(name, '') if type != 'password' else '' }}"
+           class="w-full rounded-xl border bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200
+                  dark:bg-slate-800 dark:text-slate-100
+                  {{ 'border-risk-high' if errors.get(name) else 'border-slate-200 dark:border-slate-700' }}">
+    {% if errors.get(name) %}
+      <p class="mt-1 text-xs text-risk-high">{{ errors[name] }}</p>
+    {% elif help %}
+      <p class="mt-1 text-xs text-slate-400">{{ help }}</p>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{% block content %}
+<div class="fade-in mx-auto max-w-md">
+  <div class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div class="mb-6 text-center">
+      <span class="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-brand-600 text-2xl text-white">🧑‍⚕️</span>
+      <h1 class="mt-4 text-xl font-bold tracking-tight">Create a patient account</h1>
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Keep your screening history in one place.</p>
+    </div>
+
+    <form method="post" class="space-y-4">
+      {{ field('name', 'Full name', 'text') }}
+      {{ field('username', 'Username', 'text', 'At least 3 characters.') }}
+      {{ field('password', 'Password', 'password', 'At least 6 characters.') }}
+      {{ field('confirm', 'Confirm password', 'password') }}
+      <button type="submit"
+              class="w-full rounded-xl bg-brand-600 px-4 py-2.5 font-semibold text-white hover:bg-brand-700">
+        Create account
+      </button>
+    </form>
+
+    <p class="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
+      Already have an account?
+      <a href="{{ url_for('clinic.login') }}" class="font-medium text-brand-600 hover:underline dark:text-brand-400">Sign in</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

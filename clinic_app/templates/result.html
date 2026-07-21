@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}ClearCheck · Your result{% endblock %}
+
+{% block content %}
+{% set tier = assessment.tier %}
+{% set theme = {
+  'high':     {'ring':'ring-risk-high',    'text':'text-risk-high',    'bg':'bg-red-50 dark:bg-red-950/30',   'bar':'bg-risk-high',     'label':'Higher risk',   'emoji':'⚠️'},
+  'elevated': {'ring':'ring-risk-elevated','text':'text-amber-600',    'bg':'bg-amber-50 dark:bg-amber-950/30','bar':'bg-risk-elevated','label':'Elevated risk', 'emoji':'🟡'},
+  'low':      {'ring':'ring-risk-low',     'text':'text-risk-low',     'bg':'bg-emerald-50 dark:bg-emerald-950/30','bar':'bg-risk-low',  'label':'Lower risk',    'emoji':'✅'}
+}[tier] %}
+
+<div class="fade-in mx-auto max-w-3xl">
+
+  <!-- Result headline card -->
+  <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm
+                  dark:border-slate-800 dark:bg-slate-900">
+    <div class="{{ theme.bg }} px-6 py-8 sm:px-10">
+      <div class="flex flex-col items-center gap-6 sm:flex-row sm:items-center">
+        <!-- score dial -->
+        <div class="grid h-32 w-32 shrink-0 place-items-center rounded-full bg-white shadow-inner
+                    ring-8 {{ theme.ring }} dark:bg-slate-950">
+          <div class="text-center">
+            <div class="text-3xl font-bold {{ theme.text }} tabular-nums">{{ assessment.percent }}%</div>
+            <div class="text-[10px] uppercase tracking-wide text-slate-400">risk score</div>
+          </div>
+        </div>
+        <div class="text-center sm:text-left">
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-white/70 px-3 py-1 text-xs
+                       font-semibold {{ theme.text }} dark:bg-slate-900/60">
+            {{ theme.emoji }} {{ theme.label }}
+          </span>
+          <h1 class="mt-3 text-2xl font-bold tracking-tight">{{ copy.headline }}</h1>
+          {% if record.patient_name %}
+            <p class="mt-1 text-sm text-slate-500">Thank you, {{ record.patient_name }}.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="px-6 py-6 sm:px-10">
+      <!-- probability bar with the referral threshold marked -->
+      <div class="mb-2 flex items-center justify-between text-xs text-slate-400">
+        <span>0%</span><span>Model referral line: {{ threshold_pct }}%</span><span>100%</span>
+      </div>
+      <div class="relative h-3 w-full rounded-full bg-slate-100 dark:bg-slate-800">
+        <div class="h-3 rounded-full {{ theme.bar }}" style="width: {{ assessment.percent }}%"></div>
+        <div class="absolute top-[-4px] h-5 w-0.5 bg-slate-500 dark:bg-slate-300"
+             style="left: {{ threshold_pct }}%" title="Referral threshold"></div>
+      </div>
+
+      <p class="mt-5 text-slate-600 dark:text-slate-300">{{ copy.subtext }}</p>
+      <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm
+                  font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+        👉 {{ copy.cta }}
+      </div>
+    </div>
+  </section>
+
+  <!-- Risk factors + tips -->
+  <div class="mt-6 grid gap-6 md:grid-cols-2">
+    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="text-base font-semibold">Risk factors in your answers</h2>
+      {% if factors %}
+        <ul class="mt-4 space-y-2">
+          {% for rf in factors %}
+            <li class="flex items-center gap-2 text-sm">
+              <span class="h-1.5 w-1.5 rounded-full {{ 'bg-risk-elevated' if rf.modifiable else 'bg-slate-400' }}"></span>
+              <span class="text-slate-700 dark:text-slate-200">{{ rf.label }}</span>
+              {% if rf.modifiable %}
+                <span class="ml-auto rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium
+                             text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">modifiable</span>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+        <p class="mt-4 text-xs text-slate-400">These are established diabetes risk factors found in
+          your responses — not the model's internal calculation.</p>
+      {% else %}
+        <p class="mt-4 text-sm text-slate-500">No major risk factors flagged in your answers. 🎉</p>
+      {% endif %}
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="text-base font-semibold">Things you can do</h2>
+      {% if tips %}
+        <ul class="mt-4 space-y-3">
+          {% for tip in tips %}
+            <li class="flex gap-2 text-sm text-slate-700 dark:text-slate-200">
+              <span class="text-brand-500">✓</span><span>{{ tip }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="mt-4 text-sm text-slate-500">Keep up your healthy habits and screen periodically.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <!-- AI plain-language guidance -->
+  {% if ai_text or ai_enabled %}
+    <section class="mt-6 rounded-2xl border border-brand-200 bg-brand-50/60 p-6 shadow-sm
+                    dark:border-brand-900 dark:bg-slate-900">
+      <div class="flex items-center gap-2">
+        <span class="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-white">✨</span>
+        <h2 class="text-base font-semibold">What this means for you</h2>
+        <span class="ml-auto rounded-full bg-white/70 px-2 py-0.5 text-[10px] uppercase tracking-wide
+                     text-slate-500 dark:bg-slate-800">AI assistant</span>
+      </div>
+      {% if ai_text %}
+        <div class="mt-4 space-y-3 text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+          {% for para in ai_text.split('\n\n') %}{% if para.strip() %}<p>{{ para.strip() }}</p>{% endif %}{% endfor %}
+        </div>
+        <p class="mt-4 text-xs text-slate-400">AI-generated from your answers. It is not a diagnosis —
+          please discuss your result with a clinician.</p>
+      {% else %}
+        <p class="mt-3 text-sm text-slate-600 dark:text-slate-300">
+          Get a short, plain-language explanation of your result and practical next steps.
+        </p>
+        <form method="post" action="{{ url_for('clinic.result_ai', doc_id=record.id) }}" class="mt-4">
+          <button type="submit"
+                  class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+            Generate my guidance
+          </button>
+        </form>
+      {% endif %}
+    </section>
+  {% endif %}
+
+  <div class="mt-8 flex flex-wrap justify-center gap-3">
+    <a href="{{ url_for('clinic.screening') }}"
+       class="rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700
+              hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
+      Screen another patient
+    </a>
+    <a href="{{ url_for('clinic.landing') }}"
+       class="rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700">
+      Done
+    </a>
+  </div>
+
+  <p class="mt-6 text-center text-xs text-slate-400">
+    This screening is not a diagnosis. Please discuss your result with a healthcare professional.
+  </p>
+</div>
+{% endblock %}

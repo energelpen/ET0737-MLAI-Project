@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}{{ settings.clinic_name }} · Admin{% endblock %}
+
+{% set card = 'rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900' %}
+{% set input = 'w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100' %}
+{% set label = 'mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200' %}
+
+{% block content %}
+<div class="fade-in space-y-6">
+  <div>
+    <h1 class="text-2xl font-bold tracking-tight">Admin panel</h1>
+    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+      Tune the clinic-facing details of the model and manage accounts.
+    </p>
+  </div>
+
+  <!-- Model card (read-only) + AI status -->
+  <div class="grid gap-6 lg:grid-cols-2">
+    <section class="{{ card }}">
+      <h2 class="text-base font-semibold">Deployed model</h2>
+      <dl class="mt-4 grid grid-cols-2 gap-y-3 text-sm">
+        <dt class="text-slate-500 dark:text-slate-400">Algorithm</dt><dd class="font-medium">{{ model_info.name }}</dd>
+        <dt class="text-slate-500 dark:text-slate-400">XGBoost version</dt><dd class="font-medium">{{ model_info.xgboost_version }}</dd>
+        <dt class="text-slate-500 dark:text-slate-400">Features</dt><dd class="font-medium">{{ model_info.n_features }}</dd>
+        <dt class="text-slate-500 dark:text-slate-400">Positive class</dt><dd class="font-medium">{{ model_info.positive_class }}</dd>
+        <dt class="text-slate-500 dark:text-slate-400">Referral threshold</dt>
+        <dd class="font-medium">{{ model_info.threshold_pct }}% <span class="ml-1 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-slate-500 dark:bg-slate-800">locked</span></dd>
+      </dl>
+      <p class="mt-4 text-xs text-slate-400">
+        The referral (decision) threshold is the recall-first operating point chosen when the model
+        was trained. It is fixed here so the clinic can't silently move the referral line.
+      </p>
+    </section>
+
+    <section class="{{ card }}">
+      <h2 class="text-base font-semibold">AI assistant</h2>
+      <div class="mt-4 space-y-2 text-sm">
+        <div class="flex items-center justify-between">
+          <span class="text-slate-500 dark:text-slate-400">API key & SDK</span>
+          {% if ai_status.sdk_and_key %}
+            <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-risk-low dark:bg-emerald-950/40">detected</span>
+          {% else %}
+            <span class="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-risk-high dark:bg-red-950/40">not configured</span>
+          {% endif %}
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-500 dark:text-slate-400">Model</span>
+          <span class="font-mono text-xs">{{ ai_status.model }}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-slate-500 dark:text-slate-400">Switched on</span>
+          <span class="font-medium">{{ 'Yes' if ai_status.toggled_on else 'No' }}</span>
+        </div>
+      </div>
+      {% if not ai_status.sdk_and_key %}
+        <p class="mt-4 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+          Set the <code class="font-mono">{{ ai_status.key_env }}</code> environment variable (and
+          <code class="font-mono">pip install anthropic</code>) to enable AI briefings. Until then the
+          app falls back to the rule-based guidance.
+        </p>
+      {% endif %}
+    </section>
+  </div>
+
+  <!-- Editable settings -->
+  <form method="post" action="{{ url_for('clinic.admin_settings') }}" class="{{ card }} space-y-6">
+    <div class="flex items-center justify-between">
+      <h2 class="text-base font-semibold">Clinic settings</h2>
+      <button type="submit" class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">
+        Save settings
+      </button>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label class="{{ label }}" for="clinic_name">Clinic name</label>
+        <input class="{{ input }}" id="clinic_name" name="clinic_name" value="{{ settings.clinic_name }}">
+      </div>
+      <div>
+        <label class="{{ label }}" for="clinic_tagline">Tagline</label>
+        <input class="{{ input }}" id="clinic_tagline" name="clinic_tagline" value="{{ settings.clinic_tagline }}">
+      </div>
+      <div>
+        <label class="{{ label }}" for="elevated_cutoff">Monitor-band cutoff (0–1)</label>
+        <input class="{{ input }}" id="elevated_cutoff" name="elevated_cutoff" type="number" step="0.01" min="0"
+               max="{{ model_info.threshold_pct / 100 }}" value="{{ settings.elevated_cutoff }}">
+        <p class="mt-1 text-xs text-slate-400">Scores in [cutoff, {{ model_info.threshold_pct }}%) show as “monitor / elevated”. Must stay below the referral line.</p>
+      </div>
+      <label class="flex items-center gap-2 pt-7 text-sm">
+        <input type="checkbox" name="ai_enabled" {% if settings.ai_enabled %}checked{% endif %}
+               class="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+        Enable the AI assistant (patient & clinician briefings)
+      </label>
+    </div>
+
+    <!-- Tier copy -->
+    <div>
+      <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200">Result wording by triage tier</h3>
+      <div class="mt-3 space-y-4">
+        {% for tier, tlabel in [('high','Higher risk'),('elevated','Elevated / monitor'),('low','Lower risk')] %}
+          {% set c = settings.tier_copy[tier] %}
+          <div class="rounded-xl border border-slate-100 p-4 dark:border-slate-800">
+            <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ tlabel }}</p>
+            <div class="space-y-2">
+              <input class="{{ input }}" name="{{ tier }}_headline" value="{{ c.headline }}" placeholder="Headline">
+              <textarea class="{{ input }}" name="{{ tier }}_subtext" rows="2" placeholder="Explanation">{{ c.subtext }}</textarea>
+              <input class="{{ input }}" name="{{ tier }}_cta" value="{{ c.cta }}" placeholder="Call to action">
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Factor tips -->
+    <div>
+      <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200">Lifestyle tips by risk factor</h3>
+      <p class="mt-1 text-xs text-slate-400">Reword the advice patients see for each known risk factor.</p>
+      <div class="mt-3 grid gap-3 sm:grid-cols-2">
+        {% for key, tip in settings.factor_tips.items() %}
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">{{ key }}</label>
+            <textarea class="{{ input }}" name="tip_{{ key }}" rows="2">{{ tip }}</textarea>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </form>
+
+  <form method="post" action="{{ url_for('clinic.admin_settings_reset') }}"
+        onsubmit="return confirm('Reset all settings to their defaults?');">
+    <button type="submit" class="text-sm font-medium text-risk-high hover:underline">Reset settings to defaults</button>
+  </form>
+
+  <!-- User management -->
+  <section class="{{ card }}">
+    <h2 class="text-base font-semibold">Accounts</h2>
+
+    <div class="mt-4 overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="text-xs uppercase tracking-wide text-slate-400">
+          <tr class="border-b border-slate-100 dark:border-slate-800">
+            <th class="py-2 pr-4">Username</th><th class="py-2 pr-4">Name</th>
+            <th class="py-2 pr-4">Role</th><th class="py-2 pr-4">Created</th><th class="py-2"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+            <tr class="border-b border-slate-50 dark:border-slate-800/60">
+              <td class="py-2 pr-4 font-medium">{{ u.username }}</td>
+              <td class="py-2 pr-4 text-slate-600 dark:text-slate-300">{{ u.name }}</td>
+              <td class="py-2 pr-4">
+                {% if u.username == current_user.username %}
+                  <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs dark:bg-slate-800">{{ u.role }} (you)</span>
+                {% else %}
+                  <form method="post" action="{{ url_for('clinic.admin_set_role', username=u.username) }}" class="inline-flex items-center gap-1">
+                    <select name="role" class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs dark:border-slate-700 dark:bg-slate-800">
+                      {% for r in roles %}<option value="{{ r }}" {{ 'selected' if r == u.role }}>{{ r }}</option>{% endfor %}
+                    </select>
+                    <button class="rounded-lg bg-slate-100 px-2 py-1 text-xs font-medium hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700">Set</button>
+                  </form>
+                {% endif %}
+              </td>
+              <td class="py-2 pr-4 text-xs text-slate-400">{{ u.created_at[:10] }}</td>
+              <td class="py-2 text-right">
+                {% if u.username != current_user.username %}
+                  <form method="post" action="{{ url_for('clinic.admin_delete_user', username=u.username) }}"
+                        onsubmit="return confirm('Delete {{ u.username }}?');">
+                    <button class="text-xs font-medium text-risk-high hover:underline">Delete</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-6 border-t border-slate-100 pt-6 dark:border-slate-800">
+      <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200">Add account</h3>
+      <form method="post" action="{{ url_for('clinic.admin_create_user') }}" class="mt-3 grid gap-3 sm:grid-cols-5">
+        <input class="{{ input }} sm:col-span-1" name="username" placeholder="username" required>
+        <input class="{{ input }} sm:col-span-1" name="name" placeholder="Full name">
+        <input class="{{ input }} sm:col-span-1" name="password" type="password" placeholder="password" required>
+        <select class="{{ input }} sm:col-span-1" name="role">
+          {% for r in roles %}<option value="{{ r }}" {{ 'selected' if r == 'clinician' }}>{{ r }}</option>{% endfor %}
+        </select>
+        <button class="rounded-xl bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 sm:col-span-1">
+          Create
+        </button>
+      </form>
+    </div>
+  </section>
+</div>
+{% endblock %}

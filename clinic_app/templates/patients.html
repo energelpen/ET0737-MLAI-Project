@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}ClearCheck · Patients{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight">Patient records</h1>
+      <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ total }} record{{ '' if total == 1 else 's' }} shown.</p>
+    </div>
+    <a href="{{ url_for('clinic.dashboard') }}" class="text-sm font-medium text-brand-600 hover:underline dark:text-brand-400">← Dashboard</a>
+  </div>
+
+  <!-- Filters -->
+  <div class="mb-4 flex flex-wrap items-center gap-2">
+    {% set filters = [('all','All'),('high','High'),('elevated','Elevated'),('low','Low')] %}
+    {% for val, label in filters %}
+      <a href="{{ url_for('clinic.patients', tier=val, sort=sort) }}"
+         class="rounded-full px-3 py-1.5 text-sm font-medium
+                {% if tier_filter == val %}bg-brand-600 text-white{% else %}bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:ring-slate-700{% endif %}">
+        {{ label }}
+      </a>
+    {% endfor %}
+    <span class="mx-2 text-slate-300">|</span>
+    <span class="text-xs text-slate-400">Sort:</span>
+    {% for val, label in [('recent','Most recent'),('risk','Highest risk'),('name','Name')] %}
+      <a href="{{ url_for('clinic.patients', tier=tier_filter, sort=val) }}"
+         class="rounded-lg px-2.5 py-1 text-sm {% if sort == val %}font-semibold text-brand-600 dark:text-brand-400{% else %}text-slate-500 hover:text-slate-800 dark:hover:text-slate-200{% endif %}">
+        {{ label }}
+      </a>
+    {% endfor %}
+  </div>
+
+  <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    {% if records %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-slate-100 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800 dark:bg-slate-800/50">
+            <th class="px-4 py-3 font-medium">#</th>
+            <th class="px-4 py-3 font-medium">Patient</th>
+            <th class="px-4 py-3 font-medium">Risk</th>
+            <th class="px-4 py-3 font-medium">Score</th>
+            <th class="px-4 py-3 font-medium">Age</th>
+            <th class="px-4 py-3 font-medium">BMI</th>
+            <th class="px-4 py-3 font-medium">Status</th>
+            <th class="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in records %}
+            {% set tcolor = {'high':'bg-risk-high','elevated':'bg-risk-elevated','low':'bg-risk-low'}[r.tier] %}
+            <tr class="border-b border-slate-50 hover:bg-slate-50 dark:border-slate-800/60 dark:hover:bg-slate-800/40">
+              <td class="px-4 py-3 tabular-nums text-slate-400">{{ r.id }}</td>
+              <td class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">{{ r.patient_name or 'Anonymous' }}</td>
+              <td class="px-4 py-3">
+                <span class="inline-flex items-center gap-1.5 text-xs font-medium capitalize">
+                  <span class="h-2 w-2 rounded-full {{ tcolor }}"></span>{{ r.tier }}
+                </span>
+              </td>
+              <td class="px-4 py-3 tabular-nums text-slate-600 dark:text-slate-300">{{ r.percent }}%</td>
+              <td class="px-4 py-3 tabular-nums text-slate-500">{{ r.features.AgeYears }}</td>
+              <td class="px-4 py-3 tabular-nums text-slate-500">{{ r.features.BMI }}</td>
+              <td class="px-4 py-3">
+                {% if r.tier == 'high' and not r.reviewed %}
+                  <span class="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">Needs review</span>
+                {% elif r.reviewed %}
+                  <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">Reviewed</span>
+                {% else %}
+                  <span class="text-xs text-slate-400">—</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-right">
+                <a href="{{ url_for('clinic.patient_detail', doc_id=r.id) }}"
+                   class="text-sm font-medium text-brand-600 hover:underline dark:text-brand-400">Open</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <div class="p-12 text-center text-sm text-slate-500">No records match this filter.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

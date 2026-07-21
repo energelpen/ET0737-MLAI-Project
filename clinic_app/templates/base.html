@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ClearCheck Diabetes Screening{% endblock %}</title>
+
+  <!-- Set theme before first paint to avoid a flash of the wrong mode -->
+  <script>
+    (function () {
+      const saved = localStorage.getItem('cc-theme');
+      const dark = saved ? saved === 'dark'
+                         : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (dark) document.documentElement.classList.add('dark');
+    })();
+  </script>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50:  '#eef5fe', 100: '#cde2fb', 200: '#9ec5f4', 300: '#6da7ec',
+              400: '#3987e5', 500: '#2a78d6', 600: '#256abf', 700: '#184f95',
+              800: '#104281', 900: '#0d366b',
+            },
+            /* Validated status palette (from the data-viz reference palette) */
+            risk: { high: '#d03b3b', elevated: '#fab219', low: '#0ca30c' },
+          },
+          fontFamily: {
+            sans: ['system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    [x-cloak]{display:none}
+    .fade-in{animation:fade .35s ease both}
+    @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+    /* smooth scroll for the questionnaire section anchors */
+    html{scroll-behavior:smooth}
+  </style>
+</head>
+<body class="min-h-full bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 antialiased flex flex-col">
+
+  <nav class="sticky top-0 z-30 border-b border-slate-200/70 bg-white/85 backdrop-blur
+              dark:border-slate-800 dark:bg-slate-900/85">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+      <a href="{{ url_for('clinic.home') }}" class="flex items-center gap-2 font-semibold">
+        <span class="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-white shadow-sm">✓</span>
+        <span class="text-lg tracking-tight">{{ settings.clinic_name }}</span>
+        {% if settings.clinic_tagline %}
+          <span class="hidden sm:inline text-xs font-normal text-slate-400">· {{ settings.clinic_tagline }}</span>
+        {% endif %}
+      </a>
+
+      {% set nav = 'rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' %}
+      <div class="flex items-center gap-1 sm:gap-2">
+        <a href="{{ url_for('clinic.screening') }}" class="{{ nav }}">New screening</a>
+
+        {% if current_user %}
+          {% if current_user.role == 'patient' %}
+            <a href="{{ url_for('clinic.portal') }}" class="{{ nav }}">My results</a>
+          {% endif %}
+          {% if current_user.role in ['clinician', 'admin'] %}
+            <a href="{{ url_for('clinic.dashboard') }}" class="{{ nav }}">Dashboard</a>
+            <a href="{{ url_for('clinic.patients') }}" class="{{ nav }}">Patients</a>
+          {% endif %}
+          {% if current_user.role == 'admin' %}
+            <a href="{{ url_for('clinic.admin') }}" class="{{ nav }}">Admin</a>
+          {% endif %}
+          <span class="hidden md:inline text-sm text-slate-400 pl-1">
+            {{ current_user.name }}
+            <span class="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide
+                         text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ current_user.role }}</span>
+          </span>
+          <a href="{{ url_for('clinic.logout') }}"
+             class="rounded-lg px-3 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50
+                    dark:text-brand-300 dark:hover:bg-slate-800">Sign out</a>
+        {% else %}
+          <a href="{{ url_for('clinic.login') }}" class="{{ nav }}">Sign in</a>
+          <a href="{{ url_for('clinic.register') }}"
+             class="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white
+                    hover:bg-brand-700">Register</a>
+        {% endif %}
+
+        <button type="button" onclick="toggleTheme()" aria-label="Toggle dark mode"
+                class="ml-1 grid h-9 w-9 place-items-center rounded-lg text-slate-500 hover:bg-slate-100
+                       dark:text-slate-300 dark:hover:bg-slate-800">
+          <span class="dark:hidden">🌙</span><span class="hidden dark:inline">☀️</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:py-10">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-6 space-y-2">
+          {% for cat, msg in messages %}
+            {% set styles = {
+              'error':   'border-risk-high/30 bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-200',
+              'warning': 'border-amber-300/50 bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200',
+              'success': 'border-emerald-300/50 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200',
+              'info':    'border-brand-200 bg-brand-50 text-brand-800 dark:bg-slate-800 dark:text-brand-200'
+            } %}
+            <div class="rounded-xl border px-4 py-3 text-sm {{ styles.get(cat, styles['info']) }}">{{ msg }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="border-t border-slate-200 py-6 text-center text-xs text-slate-400 dark:border-slate-800">
+    {{ settings.clinic_name }} is an educational demo (ET0737 Mini Project). Screening results are
+    not a medical diagnosis. Model: XGBoost, recall-first operating point.
+  </footer>
+
+  <script>
+    function toggleTheme() {
+      const el = document.documentElement;
+      el.classList.toggle('dark');
+      localStorage.setItem('cc-theme', el.classList.contains('dark') ? 'dark' : 'light');
+    }
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
