@@ -3,7 +3,8 @@
 IMPORTANT: these are *not* the model's internal reasons (no SHAP here). They are
 well-established diabetes risk factors that we check against the patient's own answers,
 so the result page can explain — honestly and simply — which known factors are present
-and which are modifiable. The numeric risk score itself comes from the XGBoost model.
+and which are modifiable. The numeric risk score itself comes from the SVM + XGBoost
+stacking-ensemble model.
 
 The wording of each factor's tip and of the per-tier headline/subtext/CTA is read from
 the editable settings (settings_store.py), so a clinic admin can reword the guidance

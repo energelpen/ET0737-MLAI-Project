@@ -20,16 +20,21 @@ tells a clinic *who should be referred for a confirmatory glucose test*.
 ET0737-MLAI-Project/
 ├── README.md
 ├── requirements.txt
+├── ET0737_Diabetes_Risk_Prediction_Slides.pptx   # presentation deck
 ├── data/
 │   ├── raw/
 │   │   ├── 2015.csv.zip                    # raw BRFSS source archive (79 MB)
 │   │   └── 2015.csv                        # extracted raw survey, 441k x 330 (517 MB, git-ignored)
 │   └── processed/
-│       └── diabetes_2015_clean.csv         # tidy 240,731 x 34 modelling table
+│       └── diabetes_2015_clean.csv         # tidy 240,184 x 34 modelling table
 ├── notebooks/
-│   ├── 01_Diabetes_2015_Cleaning.ipynb     # raw survey  ->  clean modelling table
-│   └── 02_Diabetes_2015_Modelling.ipynb    # full ML workflow (EDA -> train -> evaluate)
-└── archive/                                # earlier (unused) 130-hospital readmission exploration
+│   ├── 01_Diabetes_2015_Cleaning.ipynb     # raw survey  ->  clean modelling table + EDA
+│   └── 02_Diabetes_2015_Modelling.ipynb    # full ML workflow (EDA -> train -> evaluate -> export)
+├── models/                                 # deployment artifacts written by notebook 02 §12
+│   ├── diabetes_stack_recall_first.joblib      # the whole fitted pipeline
+│   └── diabetes_stack_recall_first.meta.json   # threshold, feature order, library versions
+├── clinic_app/                             # companion Flask app that serves the exported model
+└── run_clinic.py                           # entry point for the clinic app
 ```
 
 ## How to run
@@ -50,24 +55,26 @@ Run the notebooks in order (each is self-contained and uses relative paths):
    - EDA & feature justification (Matplotlib / Seaborn)
    - leakage-safe preprocessing: `StandardScaler` + `OneHotEncoder` inside a `Pipeline`,
      with a **60 / 20 / 20 stratified train / validation / test** split
-   - the five module model families — **Logistic Regression, Decision Tree, Random Forest,
-     SVM (RBF), Neural Network (MLP)** — each hyperparameter-tuned with Grid / Randomized Search CV
-   - **§5.6 — stronger preprocessing & paper-inspired algorithms** (following
-     [PMC9536939](https://pmc.ncbi.nlm.nih.gov/articles/PMC9536939/)): a **PCA** redundancy
-     analysis, **leakage-safe `SMOTE`** balancing (via `imbalanced-learn`'s `Pipeline`, applied
-     to the train fold only), and five more models — **XGBoost, HistGradientBoosting,
-     KNN (SMOTE+PCA), Bagging, AdaBoost**
-   - evaluation on Accuracy, Precision, Recall, F1, ROC-AUC + confusion matrices, an
-     overfitting (train-vs-validation) check, and a one-touch held-out **test** evaluation
+   - **six models spanning five model families**, each hyperparameter-tuned with Grid /
+     Randomized Search CV: **Logistic Regression** (linear), **Random Forest** (bagged trees),
+     **SVM (RBF)** (kernel), a **Neural Network / MLP** (`§5.4`, with its training curve) and
+     **XGBoost** (boosted trees), plus a **stacking ensemble** that combines the two strongest
+     base learners (**SVM + XGBoost**) under a **Logistic Regression meta-learner** (`§5.6`)
+   - evaluation on Accuracy, Precision, Recall, F1, ROC-AUC + confusion matrices, a 5-fold
+     cross-validated overfitting (train-vs-validation) check, and a one-touch held-out **test** evaluation
    - **§6.5 — operating-threshold tuning** that raises accuracy *and* recall together by
      choosing the decision threshold on validation (max-F1 / max balanced-accuracy / high-recall)
+   - **§6.6 — the deployed model:** the stacking ensemble at a **recall-first** operating point
+     (recall in the 0.80–0.85 safety band), so at-risk patients are rarely missed
    - new-patient prediction + an interactive `ipywidgets` risk calculator
-   - business insights and a Responsible-GenAI reflection
+   - business insights, a Responsible-GenAI reflection, and a **deployment export** (`§12`):
+     the whole fitted pipeline saved as one `joblib` artifact + a `.meta.json` sidecar, loaded
+     directly by the companion `clinic_app/` web app
 
-   > **Note on the reference paper's ~98 % accuracy.** That figure comes from applying
-   > SMOTE-ENN to the *whole* dataset *before* the train/test split — a data leak that inflates
-   > the score. We deliberately implement resampling **leakage-safely** (inside CV, train-fold
-   > only), so our honest ROC-AUC lands around **0.83**, not 98 %.
+   > **Honest performance.** ROC-AUC on these cheap survey features lands around **0.82** — the
+   > well-documented BRFSS ceiling. Some published studies report ~98 % by applying SMOTE to the
+   > *whole* dataset *before* the train/test split, which leaks synthetic test rows into training;
+   > we avoid that and report the honest, deployable figure.
 
 ## Notes on reproducibility & resource use
 

@@ -1,7 +1,8 @@
 # ClearCheck — Diabetes Screening Clinic (web app)
 
-An interactive Flask web application that turns the exported XGBoost model
-(notebook 02 §12) into a working clinic tool with three roles:
+An interactive Flask web application that turns the exported stacking-ensemble model
+(SVM + XGBoost → Logistic Regression meta-learner, notebook 02 §12) into a working clinic
+tool with three roles:
 
 - **Patients** register, complete a diabetes-risk questionnaire, get a clear friendly
   result, and see their own screening history at `/portal`. Walk-in (anonymous)
@@ -48,7 +49,7 @@ python run_clinic.py
 The admin panel shows whether the key/SDK are detected and lets an admin toggle it off.
 
 The app loads the model artifacts from `../models/` at startup, so run notebook 02 §12
-first if `models/diabetes_xgb_recall_first.ubj` is missing.
+first if `models/diabetes_stack_recall_first.joblib` is missing.
 
 ---
 
@@ -71,10 +72,11 @@ silently move the referral line. Editable settings live in the `settings` TinyDB
 
 ## How it fits the model
 
-The app scores patients with the **native UBJSON booster + joblib preprocessor** from
-§12.2 — the exact, bit-for-bit pipeline evaluated in the notebook (no retraining). The
-`.meta.json` supplies the 29-feature order and the **recall-first decision threshold**
-(~0.485); at or above it a patient is flagged *high-risk / refer*.
+The app scores patients with the **whole fitted pipeline** from §12 — one joblib file
+holding the preprocessor, the SVM + XGBoost stacking ensemble and its Logistic Regression
+meta-learner — the exact, bit-for-bit pipeline evaluated in the notebook (no retraining).
+The `.meta.json` supplies the 29-feature order and the **recall-first decision threshold**;
+at or above it a patient is flagged *high-risk / refer*.
 
 | Triage band | Rule | Meaning |
 |---|---|---|
@@ -92,7 +94,7 @@ way a clinic actually measures.
 ```
 clinic_app/
   config.py         paths, secret key, triage defaults, seed accounts, AI config
-  model_service.py  loads .ubj + .joblib + .meta.json; scores + bands a patient
+  model_service.py  loads the .joblib pipeline + .meta.json; scores + bands a patient
   settings_store.py runtime-editable clinic settings (admin panel) with defaults
   db.py             TinyDB: user accounts (3 roles) + patient records + settings
   schema.py         the 29-feature questionnaire + BRFSS code→label maps + parsing/validation

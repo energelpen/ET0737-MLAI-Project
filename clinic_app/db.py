@@ -26,7 +26,11 @@ def get_db() -> TinyDB:
     global _db
     if _db is None:
         config.DATA_DIR.mkdir(exist_ok=True)
-        _db = TinyDB(config.DB_PATH, indent=2, ensure_ascii=False)
+        # encoding="utf-8" is essential: TinyDB otherwise opens the JSON file in the
+        # platform default (cp1252 on Windows), which can't encode characters the app
+        # legitimately stores — em-dashes in the seeded copy, "≥" in an AI briefing —
+        # so a write raises UnicodeEncodeError and leaves the file mixed-encoding/corrupt.
+        _db = TinyDB(config.DB_PATH, indent=2, ensure_ascii=False, encoding="utf-8")
         _seed_staff(_db)
     return _db
 

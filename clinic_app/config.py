@@ -4,7 +4,7 @@ Everything the rest of the package needs to find on disk lives here, so paths ar
 defined once. The project layout is:
 
     <project root>/
-        models/   diabetes_xgb_recall_first.ubj  (+ .joblib, .meta.json)  <- exported by notebook 02 §12
+        models/   diabetes_stack_recall_first.joblib (+ .meta.json)  <- exported by notebook 02 §12
         data/     clinic_db.json                  (TinyDB, created at runtime)
         clinic_app/  <- this package
 """
@@ -47,10 +47,11 @@ def _load_dotenv() -> None:
 
 _load_dotenv()
 
-# Model artifacts written by notebook 02 §12.2 (native XGBoost export).
-UBJ_PATH = MODELS_DIR / "diabetes_xgb_recall_first.ubj"
-PREP_PATH = MODELS_DIR / "diabetes_preprocessor.joblib"
-META_PATH = MODELS_DIR / "diabetes_xgb_recall_first.meta.json"
+# Model artifacts written by notebook 02 §12. The whole fitted pipeline (preprocessor +
+# SVM+XGBoost stacking ensemble + Logistic Regression meta-learner) is a single joblib file,
+# paired with a JSON sidecar carrying the recall-first threshold and feature order.
+PIPE_PATH = MODELS_DIR / "diabetes_stack_recall_first.joblib"
+META_PATH = MODELS_DIR / "diabetes_stack_recall_first.meta.json"
 
 # Flask session signing key. Override in real deployments via the environment.
 SECRET_KEY = os.environ.get("CLINIC_SECRET", "dev-clinic-secret-change-me-in-production")
