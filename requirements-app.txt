@@ -1,0 +1,34 @@
+# Runtime dependencies for the ClearCheck web app (clinic_app/) ONLY.
+#
+# `requirements.txt` is the full project environment: it also carries matplotlib, seaborn,
+# jupyter and ipywidgets, which the NOTEBOOKS need and a web server never imports. Installing
+# those on a hosted dyno costs build minutes and resident memory for nothing, which matters on
+# a 512 MB free instance where scikit-learn, XGBoost and pandas are already loaded.
+#
+# Local development can keep using `pip install -r requirements.txt` — this file is a subset,
+# not a conflicting pin set. Every version here is identical to the one in requirements.txt.
+
+# --- Web layer ---
+Flask==3.1.2
+Werkzeug==3.1.3
+gunicorn==23.0.0
+tinydb==4.8.2
+
+# --- Model artifact: what unpickling the exported estimator requires ---
+# joblib.load() reconstructs the whole object graph, so every class inside it must be
+# importable at the SAME versions the notebook exported with. The .meta.json sidecar records
+# those versions and the admin model card displays them, so a mismatch is visible rather than
+# a silent behaviour change.
+#
+# NOTE: lightgbm is deliberately absent. The notebook records `lightgbm_version` in the
+# sidecar, but model_service only reads it as a STRING for display — it never imports the
+# package. Add lightgbm==4.6.0 here only if §6.4b ever selects LightGBM as the deployed model.
+scikit-learn==1.7.2
+xgboost==3.3.0
+joblib==1.5.2
+pandas==2.3.3
+numpy==2.3.5
+scipy==1.16.3
+
+# --- Optional: the Claude assistant. The app degrades to rule-based text without a key. ---
+anthropic>=0.69.0

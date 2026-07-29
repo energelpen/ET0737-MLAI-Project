@@ -25,7 +25,9 @@ def get_db() -> TinyDB:
     """Open (once) the single-file TinyDB and make sure the seed staff accounts exist."""
     global _db
     if _db is None:
-        config.DATA_DIR.mkdir(exist_ok=True)
+        # parents=True matters once CLINIC_DATA_DIR points somewhere nested (a mounted
+        # disk such as /var/data), where the intermediate directories may not exist.
+        config.DATA_DIR.mkdir(parents=True, exist_ok=True)
         # encoding="utf-8" is essential: TinyDB otherwise opens the JSON file in the
         # platform default (cp1252 on Windows), which can't encode characters the app
         # legitimately stores — em-dashes in the seeded copy, "≥" in an AI briefing —

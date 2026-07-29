@@ -4,7 +4,7 @@ Everything the rest of the package needs to find on disk lives here, so paths ar
 defined once. The project layout is:
 
     <project root>/
-        models/   diabetes_stack_recall_first.joblib (+ .meta.json)  <- exported by notebook 02 §12
+        models/   diabetes_risk_model.joblib (+ .meta.json)  <- exported by notebook 02 §12
         data/     clinic_db.json                  (TinyDB, created at runtime)
         clinic_app/  <- this package
 """
@@ -16,8 +16,19 @@ from pathlib import Path
 # clinic_app/ -> project root
 BASE_DIR = Path(__file__).resolve().parent.parent
 MODELS_DIR = BASE_DIR / "models"
-DATA_DIR = BASE_DIR / "data"
+
+# Where mutable runtime state (the TinyDB file) lives.
+#
+# Locally this is <project>/data and nothing needs configuring. On a hosted platform the
+# application directory is usually EPHEMERAL — Render rebuilds the container on every deploy,
+# so anything written next to the code is lost. Pointing CLINIC_DATA_DIR at a mounted disk
+# (e.g. /var/data) is what makes patient records survive a redeploy. See render.yaml.
+DATA_DIR = Path(os.environ.get("CLINIC_DATA_DIR") or (BASE_DIR / "data"))
 DB_PATH = DATA_DIR / "clinic_db.json"
+
+# Render sets this automatically; it is the most reliable "am I in production?" signal we get.
+# It only ever tightens behaviour — every guard below is a no-op on a local machine.
+ON_RENDER = os.environ.get("RENDER", "").lower() == "true"
 
 
 def _load_dotenv() -> None:
@@ -47,14 +58,25 @@ def _load_dotenv() -> None:
 
 _load_dotenv()
 
-# Model artifacts written by notebook 02 §12. The whole fitted pipeline (preprocessor +
-# SVM+XGBoost stacking ensemble + Logistic Regression meta-learner) is a single joblib file,
-# paired with a JSON sidecar carrying the recall-first threshold and feature order.
-PIPE_PATH = MODELS_DIR / "diabetes_stack_recall_first.joblib"
-META_PATH = MODELS_DIR / "diabetes_stack_recall_first.meta.json"
+# Model artifacts written by notebook 02 §12. The whole fitted estimator -- the preprocessor and
+# whichever classifier §6.4b selected, wrapped in the isotonic calibrator from §6.7 -- is a single
+# joblib file, paired with a JSON sidecar carrying the recall-first threshold and feature order.
+#
+# The filenames are deliberately named for the artifact's ROLE, not for the winning algorithm. The
+# notebook compares nine models and picks one by rule, so hard-coding an algorithm name here
+# would mean editing this file every time that comparison is re-run. Read the actual model name
+# from the sidecar (`model_service.RiskModel.model_name`) instead -- the admin model card does.
+#
+# The model is CALIBRATED, which is what makes `probability * 100` safe to show a patient: the raw
+# model was over-confident by ~2.5x (it read "85%" where the true rate was ~50%). Because
+# calibration only rescales the probability, the threshold moved but the referral decisions did
+# not. Do NOT swap in an uncalibrated artifact without revisiting the displayed percentages.
+PIPE_PATH = MODELS_DIR / "diabetes_risk_model.joblib"
+META_PATH = MODELS_DIR / "diabetes_risk_model.meta.json"
 
 # Flask session signing key. Override in real deployments via the environment.
-SECRET_KEY = os.environ.get("CLINIC_SECRET", "dev-clinic-secret-change-me-in-production")
+_DEV_SECRET = "dev-clinic-secret-change-me-in-production"
+SECRET_KEY = os.environ.get("CLINIC_SECRET", _DEV_SECRET)
 
 # Triage banding. The model's own recall-first cut-off (loaded from the .meta.json,
 # ~0.485) is the REFER line — at or above it the patient is flagged high-risk. Below
@@ -68,19 +90,66 @@ ELEVATED_CUTOFF = 0.30
 # settings and accounts; `patient` sees only their own screening history.
 ROLES = ("admin", "clinician", "patient")
 
-# Seed staff accounts created on first run (demo credentials — change for real use).
+# Seed staff accounts created on first run.
+#
+# The demo credentials below are PUBLIC — they are in the README, and letting a visitor sign in
+# as `admin` / `admin123` is the point of a showcase deployment. This app is a simulation: the
+# patient records are synthetic, there is no real PII, and the whole thing exists to demonstrate
+# the model. So the defaults are allowed to stand anywhere, including on a public URL.
+#
+# They are still overridable, which is what a real deployment would use:
+#     CLINIC_ADMIN_USER / CLINIC_ADMIN_PASSWORD
+#     CLINIC_DOCTOR_USER / CLINIC_DOCTOR_PASSWORD
+#
+# `db._seed_staff()` only creates an account that does not already exist, so changing these
+# later does NOT rotate an existing password — delete the user (or the DB file) to re-seed.
+_DEV_ADMIN_PW = "admin123"
+_DEV_DOCTOR_PW = "clinic123"
+
 DEFAULT_ADMIN = {
-    "username": "admin",
-    "password": "admin123",
+    "username": os.environ.get("CLINIC_ADMIN_USER", "admin"),
+    "password": os.environ.get("CLINIC_ADMIN_PASSWORD", _DEV_ADMIN_PW),
     "name": "Clinic Administrator",
     "role": "admin",
 }
 DEFAULT_DOCTOR = {
-    "username": "doctor",
-    "password": "clinic123",
+    "username": os.environ.get("CLINIC_DOCTOR_USER", "doctor"),
+    "password": os.environ.get("CLINIC_DOCTOR_PASSWORD", _DEV_DOCTOR_PW),
     "name": "Dr. Alex Tan",
     "role": "clinician",
 }
+
+
+def _warn_public_defaults() -> None:
+    """Record which public defaults are live on a hosted deploy — log only, never fatal.
+
+    Deliberately NOT an error. This is a demo app and its credentials are meant to be shared;
+    blocking startup over that would break the thing it is for. The warning exists so the fact
+    is visible in the Render logs rather than forgotten, and so that if this app is ever reused
+    with real data the reader has already been told exactly which knobs to set.
+    """
+    import sys
+
+    public = []
+    if SECRET_KEY == _DEV_SECRET:
+        public.append("CLINIC_SECRET (session cookies are signed with the repo's public key, "
+                      "so they can be forged)")
+    if DEFAULT_ADMIN["password"] == _DEV_ADMIN_PW:
+        public.append("CLINIC_ADMIN_PASSWORD (admin/admin123)")
+    if DEFAULT_DOCTOR["password"] == _DEV_DOCTOR_PW:
+        public.append("CLINIC_DOCTOR_PASSWORD (doctor/clinic123)")
+    if not public:
+        return
+    print("[clinic_app] NOTE - running on a hosted deployment with public demo credentials:",
+          file=sys.stderr)
+    for item in public:
+        print(f"[clinic_app]   * {item}", file=sys.stderr)
+    print("[clinic_app] Intended for this screening demo (synthetic data, no real PII). "
+          "Set the variables above before reusing this app with anything real.", file=sys.stderr)
+
+
+if ON_RENDER:
+    _warn_public_defaults()
 
 # --- AI (Claude) assistant -------------------------------------------------------
 # Agentic plain-language guidance for patients and briefings for clinicians. Uses the

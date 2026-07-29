@@ -1,0 +1,70 @@
+# Render Blueprint for the ClearCheck clinic app.
+#
+# Deploy: push this repo to GitHub, then in Render choose New -> Blueprint and point it here.
+# Render reads this file and provisions the service with the secrets below already generated.
+#
+# PREREQUISITE — the model artifact must be committed. Render builds from the git repo, so
+# `models/diabetes_risk_model.joblib` has to be in it. Run notebook 02 end-to-end first: §12a
+# writes the artifact and prints whether it is inside GitHub's 100 MB per-file limit, and §12c
+# refuses to pass if it is not. (This is exactly what §6.4b's rule 3 protects — an earlier run
+# selected a model whose artifact was ~340 MB, which could not have been deployed this way.)
+
+services:
+  - type: web
+    name: clearcheck-clinic
+    runtime: python
+    plan: free # 512 MB RAM, spins down when idle -> ~30 s cold start while the model loads
+    region: singapore
+    buildCommand: pip install -r requirements-app.txt
+    # ONE worker is required, not a tuning choice: TinyDB is a single JSON file with no
+    # cross-process locking, so a second worker process would silently clobber writes.
+    # Concurrency comes from threads instead. See the docstring in wsgi.py.
+    startCommand: gunicorn wsgi:app --workers 1 --threads 4 --timeout 120 --bind 0.0.0.0:$PORT
+    healthCheckPath: /
+    envVars:
+      # Render injects RENDER=true itself; config.py keys its production guards off it.
+      - key: PYTHON_VERSION
+        value: "3.13.9"
+
+      # Session signing key. generateValue makes Render mint a random one on first deploy, at
+      # no cost to you — worth keeping even for a demo, since it stops session cookies being
+      # signed with the key that is committed to this repo. Nothing breaks without it: the app
+      # falls back to the dev key and logs a note.
+      - key: CLINIC_SECRET
+        generateValue: true
+
+      # Seed staff logins are LEFT AS THE PUBLIC DEMO CREDENTIALS on purpose — admin/admin123
+      # and doctor/clinic123 — so anyone opening the link can sign in and try both roles. This
+      # is a simulation with synthetic patients and no real PII.
+      #
+      # To lock it down instead, uncomment these and set real values in the dashboard:
+      #   - key: CLINIC_ADMIN_PASSWORD
+      #     sync: false
+      #   - key: CLINIC_DOCTOR_PASSWORD
+      #     sync: false
+
+      # Optional — enables the Claude assistant. Left unset, the app falls back to its
+      # rule-based guidance and every page still works. sync:false means "prompt me for it
+      # in the dashboard", so the key is never written into this file.
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+    # --- PERSISTENCE (commented out: persistent disks need a paid instance type) ----------
+    # Without a disk, Render's filesystem is EPHEMERAL: every deploy and every restart wipes
+    # data/clinic_db.json. Staff accounts are re-seeded automatically on boot, but registered
+    # patients and their screening history are LOST. That is acceptable for a demo link and
+    # not acceptable for anything real.
+    #
+    # To fix it, upgrade the plan and uncomment both blocks below. CLINIC_DATA_DIR moves the
+    # TinyDB file onto the mounted volume, and db.get_db() creates the directory on first use.
+    #
+    #   - key: CLINIC_DATA_DIR
+    #     value: /var/data
+    #
+    # disk:
+    #   name: clinic-data
+    #   mountPath: /var/data
+    #   sizeGB: 1
+    #
+    # The longer-term fix is Postgres (Render has a free tier), which would also lift the
+    # single-worker restriction above — but that means rewriting db.py off TinyDB.

@@ -328,7 +328,8 @@ def admin():
         model_info={
             "name": model.model_name,
             "threshold_pct": round(model.threshold * 100, 2),
-            "libraries": f"scikit-learn {model.sklearn_version} · XGBoost {model.xgboost_version}",
+            "libraries": (f"scikit-learn {model.sklearn_version} · XGBoost {model.xgboost_version}"
+                          f" · LightGBM {model.lightgbm_version}"),
             "n_features": len(model.feature_order),
             "positive_class": model.positive_class,
         },
