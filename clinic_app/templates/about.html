@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% block title %}About · {{ settings.clinic_name }}{% endblock %}
+
+{% block content %}
+<div class="fade-in space-y-8">
+
+  <!-- ══════════════════════════ HEADER ══════════════════════════ -->
+  <header class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm sm:p-12
+                 dark:border-slate-800 dark:bg-slate-900">
+    <span class="inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1 text-xs
+                 font-medium text-brand-700 dark:bg-slate-800 dark:text-brand-300">
+      About this project
+    </span>
+    <h1 class="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">
+      A diabetes pre-screen built for {{ lead.name }}'s clinic.
+    </h1>
+    <p class="mt-5 max-w-3xl text-base leading-relaxed text-slate-600 dark:text-slate-300">
+      {{ settings.clinic_name }} turns a short intake questionnaire into a risk estimate a clinician
+      can act on — so patients who need a confirmatory glucose test are identified before they leave
+      the building, and those who don't aren't sent for one unnecessarily. It was developed by four
+      Singapore Polytechnic students for the <strong>ET0737 Machine Learning &amp; AI</strong> module.
+    </p>
+  </header>
+
+  <!-- ══════════════════════════ THE CLINIC ══════════════════════════ -->
+  <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm
+                  dark:border-slate-800 dark:bg-slate-900">
+    <div class="grid gap-8 p-8 sm:p-10 md:grid-cols-3">
+      <div class="flex justify-center md:block">
+        <img src="{{ url_for('static', filename=lead.photo) }}"
+             alt="Portrait of {{ lead.name }}"
+             class="h-56 w-56 rounded-2xl object-cover object-[center_25%] shadow-md ring-4
+                    ring-brand-50 dark:ring-slate-800">
+      </div>
+      <div class="md:col-span-2">
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-400">
+          {{ lead.role }}
+        </p>
+        <h2 class="mt-1 text-2xl font-bold tracking-tight">{{ lead.name }}</h2>
+        <p class="mt-4 leading-relaxed text-slate-600 dark:text-slate-300">“{{ lead.blurb }}”</p>
+
+        <div class="mt-6 rounded-2xl bg-slate-50 p-5 dark:bg-slate-800/60">
+          <p class="text-sm font-semibold">The brief we were given</p>
+          <p class="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+            Diabetes is often found late. A confirmatory blood test is cheap, but you have to know
+            who to send. The clinic wanted a way to rank walk-in patients by risk using only
+            questions the front desk already asks — no new equipment, no lab turnaround — and to
+            <em>err on the side of catching people</em>, because telling an at-risk patient they are
+            fine is far worse than sending a healthy one for a cheap test.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ THE TEAM ══════════════════════════ -->
+  <section>
+    <h2 class="text-lg font-semibold tracking-tight">The team</h2>
+    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+      Diploma students, School of Electrical &amp; Electronic Engineering, Singapore Polytechnic.
+    </p>
+    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+      {% for member in team %}
+        <div class="flex items-start gap-4 rounded-2xl border border-slate-200 bg-white p-5
+                    dark:border-slate-800 dark:bg-slate-900">
+          <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-50
+                       text-sm font-bold text-brand-700 dark:bg-slate-800 dark:text-brand-300">
+            {{ member.name.split(' ')[0][0] }}{{ member.name.split(' ')[-1][0] }}
+          </span>
+          <div>
+            <p class="font-semibold leading-snug">{{ member.name }}</p>
+            <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ member.focus }}</p>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ HOW THE MODEL WORKS ══════════════════════════ -->
+  <section class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm sm:p-10
+                  dark:border-slate-800 dark:bg-slate-900">
+    <h2 class="text-xl font-bold tracking-tight">How the screening actually works</h2>
+    <p class="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+      Everything below was built and measured in a Jupyter notebook, then exported as a single
+      artifact this website loads. The site never retrains anything — it serves the exact model
+      that was evaluated.
+    </p>
+
+    <div class="mt-8 space-y-6">
+
+      <div class="border-l-2 border-brand-200 pl-5 dark:border-slate-700">
+        <h3 class="font-semibold">1 · The data</h3>
+        <p class="mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+          The CDC's <strong>Behavioral Risk Factor Surveillance System 2015</strong> — a telephone
+          health survey of 441,456 US adults. After removing "don't know" and "refused" answers and
+          every column that would leak the answer (insulin use, prior diabetes diagnosis, blood
+          sugar readings), <strong>240,184 responses</strong> and
+          {{ model_facts.n_features }} features remained.
+        </p>
+      </div>
+
+      <div class="border-l-2 border-brand-200 pl-5 dark:border-slate-700">
+        <h3 class="font-semibold">2 · Nine models, one fair comparison</h3>
+        <p class="mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+          We trained nine models spanning eight algorithm families — from a single decision tree and
+          k-nearest neighbours through to a support vector machine, a neural network, gradient
+          boosting and a four-family stacking ensemble. Every one goes through the same code path,
+          so they get identical preprocessing and identical validation. Comparing them at the same
+          score would have been misleading, so we instead held <em>recall fixed</em> and asked which
+          model buys that recall most cheaply.
+        </p>
+      </div>
+
+      <div class="border-l-2 border-brand-200 pl-5 dark:border-slate-700">
+        <h3 class="font-semibold">3 · Choosing one, by a rule fixed in advance</h3>
+        <p class="mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+          The deployed model is <strong>{{ model_facts.name }}</strong>. It was not picked by
+          preference: a rule written before the results were read selects it — trained on the full
+          dataset, best precision at matched recall, and among models whose accuracy is
+          statistically tied, the one cheapest to ship and run. The last clause matters more than it
+          sounds: an earlier run chose a model that was <em>two orders of magnitude larger</em> for an
+          accuracy difference too small to measure.
+        </p>
+      </div>
+
+      <div class="border-l-2 border-brand-200 pl-5 dark:border-slate-700">
+        <h3 class="font-semibold">4 · Tuned to catch people, not to look accurate</h3>
+        <p class="mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+          About 16% of people in the data are at risk, so a model that called everyone "fine" would
+          be 84% accurate and clinically worthless. We tune the decision point for
+          <strong>recall</strong> instead — currently referring at
+          <strong>{{ model_facts.threshold_pct }}%</strong> estimated risk, which catches roughly
+          <strong>8 in 10</strong> at-risk patients. The deliberate trade-off is more false alarms:
+          most referred patients turn out fine, and a cheap blood test is the right price for that.
+        </p>
+      </div>
+
+      <div class="border-l-2 border-brand-200 pl-5 dark:border-slate-700">
+        <h3 class="font-semibold">5 · The percentage means what it says</h3>
+        <p class="mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+          A model can rank patients correctly while its numbers are badly wrong — ours read "85%"
+          for a group whose true rate was about 50%. Since we show a percentage to a human, we
+          <strong>calibrated</strong> it: out of every 100 patients shown "30%", close to 30 really
+          are at risk. Calibration changed no referral decision, only the honesty of the number.
+        </p>
+      </div>
+
+      <div class="border-l-2 border-brand-200 pl-5 dark:border-slate-700">
+        <h3 class="font-semibold">6 · Checked for fairness</h3>
+        <p class="mt-1.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+          A screen that works well on average can still fail a specific group. We audited recall
+          across <strong>race, sex, income and age band</strong> and report the gap between the
+          best- and worst-served group. Race is predictive but socially sensitive; the notebook
+          argues it should be monitored in production and considered for removal, rather than
+          quietly encoding structural inequity as clinical risk.
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════ LIMITATIONS ══════════════════════════ -->
+  <section class="rounded-3xl border border-amber-300/50 bg-amber-50 p-8 sm:p-10
+                  dark:border-amber-900/50 dark:bg-amber-950/30">
+    <h2 class="text-xl font-bold tracking-tight text-amber-900 dark:text-amber-100">
+      What this cannot do
+    </h2>
+    <p class="mt-2 text-sm text-amber-800 dark:text-amber-200/90">
+      Stating limits plainly is part of the work, not a disclaimer bolted on afterwards.
+    </p>
+    <ul class="mt-5 space-y-3 text-sm leading-relaxed text-amber-900 dark:text-amber-100/90">
+      <li class="flex gap-3">
+        <span aria-hidden="true">•</span>
+        <span><strong>It cannot diagnose.</strong> It estimates risk from self-reported answers. Only
+        a blood test can diagnose diabetes, and a low score is not a clean bill of health.</span>
+      </li>
+      <li class="flex gap-3">
+        <span aria-hidden="true">•</span>
+        <span><strong>Most referrals will be false alarms.</strong> That is the intended design. At
+        this operating point roughly one in three referred patients turns out to be at risk — the
+        price of missing as few people as possible.</span>
+      </li>
+      <li class="flex gap-3">
+        <span aria-hidden="true">•</span>
+        <span><strong>There is a ceiling in the questionnaire itself.</strong> Every one of the nine
+        models landed at almost the same accuracy. That is a limit of what survey answers can reveal
+        about blood glucose — not something a fancier algorithm fixes. Better data (a glucose
+        reading, family history) would help; a better classifier would not.</span>
+      </li>
+      <li class="flex gap-3">
+        <span aria-hidden="true">•</span>
+        <span><strong>The training data is American.</strong> BRFSS surveys US adults, so prevalence
+        and risk-factor patterns may not transfer cleanly to a Singapore population.</span>
+      </li>
+      <li class="flex gap-3">
+        <span aria-hidden="true">•</span>
+        <span><strong>This deployment is a simulation.</strong> The patients are synthetic and the
+        clinic is not a real medical service. On the hosted demo, records may reset when the server
+        restarts.</span>
+      </li>
+    </ul>
+  </section>
+
+  <!-- ══════════════════════════ TECH + CTA ══════════════════════════ -->
+  <section class="grid gap-6 md:grid-cols-3">
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 md:col-span-2
+                dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="font-semibold">How it's built</h2>
+      <dl class="mt-4 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+        <div>
+          <dt class="text-slate-500 dark:text-slate-400">Modelling</dt>
+          <dd class="font-medium">scikit-learn, XGBoost, LightGBM</dd>
+        </div>
+        <div>
+          <dt class="text-slate-500 dark:text-slate-400">Web application</dt>
+          <dd class="font-medium">Flask, Jinja, Tailwind CSS</dd>
+        </div>
+        <div>
+          <dt class="text-slate-500 dark:text-slate-400">Storage</dt>
+          <dd class="font-medium">TinyDB (single JSON file)</dd>
+        </div>
+        <div>
+          <dt class="text-slate-500 dark:text-slate-400">AI assistant</dt>
+          <dd class="font-medium">
+            Claude {% if ai_enabled %}<span class="text-risk-low">· enabled</span>{% else %}<span class="text-slate-400">· off (rule-based text)</span>{% endif %}
+          </dd>
+        </div>
+        <div class="sm:col-span-2">
+          <dt class="text-slate-500 dark:text-slate-400">Deployed model</dt>
+          <dd class="font-medium">{{ model_facts.name }} · refers at {{ model_facts.threshold_pct }}% · {{ model_facts.n_features }} features</dd>
+        </div>
+      </dl>
+    </div>
+
+    <div class="flex flex-col justify-center rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800
+                p-6 text-white shadow-lg">
+      <h2 class="text-lg font-semibold">Try it yourself</h2>
+      <p class="mt-2 text-sm text-brand-100">
+        The questionnaire takes about three minutes and needs no account.
+      </p>
+      <a href="{{ url_for('clinic.screening') }}"
+         class="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3
+                font-semibold text-brand-700 transition hover:bg-brand-50">
+        Start a screening →
+      </a>
+    </div>
+  </section>
+
+</div>
+{% endblock %}

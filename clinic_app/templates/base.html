@@ -61,6 +61,7 @@
       {% set nav = 'rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' %}
       <div class="flex items-center gap-1 sm:gap-2">
         <a href="{{ url_for('clinic.screening') }}" class="{{ nav }}">New screening</a>
+        <a href="{{ url_for('clinic.about') }}" class="{{ nav }} hidden sm:inline-block">About</a>
 
         {% if current_user %}
           {% if current_user.role == 'patient' %}
@@ -117,9 +118,36 @@
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="border-t border-slate-200 py-6 text-center text-xs text-slate-400 dark:border-slate-800">
-    {{ settings.clinic_name }} is an educational demo (ET0737 Mini Project). Screening results are
-    not a medical diagnosis. Model: calibrated risk model, recall-first operating point.
+  <footer class="mt-auto border-t border-slate-200 bg-white/50 dark:border-slate-800 dark:bg-slate-900/40">
+    <div class="mx-auto max-w-6xl px-4 py-8">
+      <div class="grid gap-6 text-xs text-slate-500 dark:text-slate-400 sm:grid-cols-3">
+        <div>
+          <p class="font-semibold text-slate-700 dark:text-slate-200">{{ settings.clinic_name }}</p>
+          <p class="mt-1.5 leading-relaxed">
+            A diabetes pre-screening tool built for Dr. Rajesh's community clinic.
+            <a href="{{ url_for('clinic.about') }}" class="text-brand-600 hover:underline dark:text-brand-400">About this project →</a>
+          </p>
+        </div>
+        <div>
+          <p class="font-semibold text-slate-700 dark:text-slate-200">ET0737 Machine Learning &amp; AI</p>
+          <p class="mt-1.5 leading-relaxed">
+            Mini Project · School of Electrical &amp; Electronic Engineering,
+            Singapore Polytechnic.
+          </p>
+        </div>
+        <div>
+          <p class="font-semibold text-slate-700 dark:text-slate-200">Developed by</p>
+          <p class="mt-1.5 leading-relaxed">
+            Amon Saka Kaneko · Suriyavarman s/o Jayavaraman ·
+            Alfred Hirudhaya Jeyeseelan Vijai · Javier Yeo Xu Bin
+          </p>
+        </div>
+      </div>
+      <p class="mt-6 border-t border-slate-200 pt-4 text-center text-xs text-slate-400 dark:border-slate-800">
+        Educational demo with synthetic patients — not a real medical service. Screening results are
+        <strong>not a diagnosis</strong>; only a blood test can diagnose diabetes.
+      </p>
+    </div>
   </footer>
 
   <script>

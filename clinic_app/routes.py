@@ -68,10 +68,51 @@ def inject_globals():
             "ai_enabled": ai.is_enabled()}
 
 
+# ------------------------------------------------------------------ page content
+# The people and coursework behind this build. Kept in one place so the landing page and
+# the About page can never drift apart, and so a name is corrected once rather than twice.
+CLINIC_LEAD = {
+    "name": "Dr. Rajesh",
+    "role": "Clinic Lead & Project Sponsor",
+    "photo": "doctor.jpg",
+    "blurb": ("Dr. Rajesh set the brief for this project: give the front desk a way to tell, "
+              "before a patient leaves, whether they should be sent for a confirmatory "
+              "glucose test — using nothing but questions the clinic can already ask."),
+}
+
+PROJECT_TEAM = [
+    {"name": "Amon Saka Kaneko",              "focus": "Modelling & deployment pipeline"},
+    {"name": "Suriyavarman s/o Jayavaraman",  "focus": "Data cleaning & feature justification"},
+    {"name": "Alfred Hirudhaya Jeyeseelan Vijai", "focus": "Evaluation & fairness audit"},
+    {"name": "Javier Yeo Xu Bin",             "focus": "Web application & clinician tools"},
+]
+
+
+def _model_facts() -> dict:
+    """Live facts about the deployed artifact, read from the model rather than hard-coded.
+
+    §6.4b picks the winning algorithm by rule, so the deployed model can change between
+    notebook runs. Reading the name, threshold and feature count from the loaded artifact
+    means the public pages describe whatever is ACTUALLY serving predictions.
+    """
+    model = get_model()
+    return {
+        "name": model.model_name,
+        "threshold_pct": round(model.threshold * 100, 1),
+        "n_features": len(model.feature_order),
+    }
+
+
 # ---------------------------------------------------------------- patient-facing
 @bp.route("/")
 def landing():
-    return render_template("landing.html")
+    return render_template("landing.html", lead=CLINIC_LEAD, model_facts=_model_facts())
+
+
+@bp.route("/about")
+def about():
+    return render_template("about.html", lead=CLINIC_LEAD, team=PROJECT_TEAM,
+                           model_facts=_model_facts())
 
 
 @bp.route("/home")
