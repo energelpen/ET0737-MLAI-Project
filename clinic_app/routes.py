@@ -84,19 +84,53 @@ CLINIC_LEAD = {
 # funding story the demo is framed around, kept beside the other page content so the
 # About page reads from one source.
 CLINIC_OWNER = {
-    "name": "Mr. Arjun",
-    "role": "Owner & Angel Investor",
-    "photo": "owner.png",
-    "blurb": ("I have more money than I could spend in a hundred lifetimes. Putting some of it "
-              "into a clinic that catches diabetes early is the least interesting thing I do all "
-              "week, and easily the most useful."),
+    "name": "Mr. Arjun & Mr. Kavin",
+    "role": "Owners & Angel Investors",
+    "photo": "rich_partners.jpg",
+    "caption": "Arriving at the Monaco Yacht Club, two weeks after signing the cheque for this clinic.",
+    "blurb": ("Between us we have more money than we could spend in a hundred lifetimes. Putting "
+              "some of it into a clinic that catches diabetes early is the least interesting thing "
+              "we do all week, and easily the most useful."),
     "ventures": [
-        {"name": "Orbital launch vehicles",
-         "detail": "A rocket company flying reusable boosters — the profits underwrite the clinic."},
-        {"name": "Electric vehicles",
-         "detail": "A car company whose entire safety division was lent to this project for a month."},
         {"name": "Point-to-point teleportation",
-         "detail": "Still in closed beta. Clinic patients are promised first access to the network."},
+         "detail": "The company that made them. Displaces matter between two pads; no vehicle, "
+                   "no journey, no in-between."},
+        {"name": "Orbital launch vehicles",
+         "detail": "Reusable boosters, started as a side bet on the ranges teleportation cannot "
+                   "yet reach. The profits underwrite the clinic."},
+        {"name": "Electric vehicles",
+         "detail": "A car company they bought largely so they had something to arrive in. Its "
+                   "safety division was lent to this project for a month."},
+    ],
+}
+
+# A patient testimonial for the demo scenario. Fictional, like the clinic itself — the
+# footnote on the About page says so, so the story can be read for what it is.
+PATIENT_FEEDBACK = {
+    "name": "Danesh",
+    "meta": "Screened as a walk-in · diagnosed type 2 diabetes · treatment fully funded",
+    "photo": "user.jpg",
+    "quote": [
+        ("Let me talk about Mr. Arjun first, because none of the rest of this happens without "
+         "him. The man is a trillionaire. He owns rockets. He could be anywhere. Instead he "
+         "built a clinic for people like me — someone who walked in mainly because the waiting "
+         "room had air-conditioning."),
+        ("I filled in the questionnaire thinking it was a personality quiz. Three minutes, no "
+         "needles, just questions the front desk already asks. It came back and said I was high "
+         "risk. Turns out I had high blood pressure, high blood sugar and high cholesterol. All "
+         "three. At the same time. For years. I did not know about a single one of them. In my "
+         "defence, I assumed 'high' was good. Like a high score."),
+        ("The questionnaire was genuinely insightful — it connected things I never would have "
+         "connected, and it was right. The blood test confirmed it: diabetes. Then I asked what "
+         "the treatment would cost, and they said nothing, because Mr. Arjun pays for every "
+         "patient here out of his own pocket. Free of charge. Today I am 100% cured. One "
+         "hundred percent. The doctor said he had never used that number before."),
+        ("My only remaining issue is that the doctor still has not given me the slides. I asked "
+         "at every appointment. \"Doctor, can I have the slides?\" He says there are no slides. "
+         "Fine — the deck, then. He says there is no deck. I asked if he could upload the PDF to "
+         "the portal, or failing that the lecture recording. He looked at the nurse. The nurse "
+         "looked at me. I have been fully cured for four months and I am still waiting for the "
+         "slides. Everything else: five stars."),
     ],
 }
 
@@ -132,7 +166,8 @@ def landing():
 @bp.route("/about")
 def about():
     return render_template("about.html", lead=CLINIC_LEAD, owner=CLINIC_OWNER,
-                           team=PROJECT_TEAM, model_facts=_model_facts())
+                           feedback=PATIENT_FEEDBACK, team=PROJECT_TEAM,
+                           model_facts=_model_facts())
 
 
 @bp.route("/home")

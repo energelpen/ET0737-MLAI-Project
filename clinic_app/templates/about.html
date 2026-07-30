@@ -65,12 +65,21 @@
         <p class="mt-4 leading-relaxed text-slate-600 dark:text-slate-300">“{{ owner.blurb }}”</p>
 
         <p class="mt-4 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-          None of this exists without {{ owner.name }}. He owns the clinic outright and funded the
-          project end to end as an angel investor — the compute, the licences, the hosting, the
-          hardware, every hour of it — and then asked for nothing back. A trillionaire several times
-          over, he built the AI clinic for one reason: the people who most need an early diabetes
-          screen are usually the ones least able to pay for one, so he made it free at the point of
-          use and told us to optimise for catching patients, never for cost.
+          They met in Secondary 1, sat next to each other for four years, and spent most of that
+          time on a problem their teachers told them to stop bringing up: why anything has to
+          <em>travel</em> to get somewhere. Two decades later their company demonstrated the first
+          working teleportation pad — matter displaced between two points with no vehicle, no
+          route and no journey in between — and made both of them trillionaires roughly overnight.
+          Freight went first, then people. Rockets and cars came afterwards, almost as hobbies.
+        </p>
+
+        <p class="mt-4 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+          None of this clinic exists without them. They own it outright and funded the project end
+          to end as angel investors — the compute, the licences, the hosting, the hardware, every
+          hour of it — and then asked for nothing back. They built the AI clinic for one reason:
+          the people who most need an early diabetes screen are usually the ones least able to pay
+          for one, so they made it free at the point of use and told us to optimise for catching
+          patients, never for cost.
         </p>
 
         <div class="mt-6 grid gap-3 sm:grid-cols-3">
@@ -85,19 +94,63 @@
         </div>
 
         <p class="mt-5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-          Rockets, cars and teleportation pay for the clinic; the clinic is the part he actually
-          talks about. His standing instruction to the team was one sentence:
-          <em>“Serve the community first — I will cover whatever that costs.”</em>
+          Teleportation, rockets and cars pay for the clinic; the clinic is the part they actually
+          talk about. Their standing instruction to the team was one sentence:
+          <em>“Serve the community first — we will cover whatever that costs.”</em>
         </p>
       </div>
 
-      <div class="flex justify-center md:order-1 md:block">
+      <figure class="md:order-1">
         <img src="{{ url_for('static', filename=owner.photo) }}"
-             alt="Portrait of {{ owner.name }}"
-             class="h-56 w-56 rounded-2xl object-cover object-[center_20%] shadow-md ring-4
-                    ring-brand-50 dark:ring-slate-800">
-      </div>
+             alt="{{ owner.name }} on a red carpet outside the Monaco Yacht Club"
+             class="w-full rounded-2xl shadow-md ring-4 ring-brand-50 dark:ring-slate-800">
+        <figcaption class="mt-3 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+          {{ owner.caption }}
+        </figcaption>
+      </figure>
     </div>
+  </section>
+
+  <!-- ══════════════════════════ PATIENT FEEDBACK ══════════════════════════ -->
+  <section>
+    <h2 class="text-lg font-semibold tracking-tight">What patients say</h2>
+    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+      Feedback from a walk-in the screen picked up.
+    </p>
+
+    <figure class="mt-4 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm
+                   dark:border-slate-800 dark:bg-slate-900">
+      <div class="grid gap-8 p-8 sm:p-10 md:grid-cols-3">
+        <div class="flex flex-col items-center gap-4 md:items-start">
+          <img src="{{ url_for('static', filename=feedback.photo) }}"
+               alt="Portrait of {{ feedback.name }}"
+               class="h-56 w-56 rounded-2xl object-cover object-[center_40%] shadow-md ring-4
+                      ring-brand-50 dark:ring-slate-800">
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-risk-low/10 px-3 py-1
+                       text-xs font-medium text-risk-low">
+            ★★★★★ · 5.0
+          </span>
+        </div>
+
+        <blockquote class="md:col-span-2">
+          <div class="space-y-4 border-l-2 border-brand-200 pl-5 text-sm leading-relaxed
+                      text-slate-600 dark:border-slate-700 dark:text-slate-300">
+            {% for para in feedback.quote %}
+              <p>{{ para }}</p>
+            {% endfor %}
+          </div>
+          <figcaption class="mt-6 border-t border-slate-200 pt-4 dark:border-slate-800">
+            <p class="font-semibold">{{ feedback.name }}</p>
+            <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ feedback.meta }}</p>
+          </figcaption>
+        </blockquote>
+      </div>
+    </figure>
+
+    <p class="mt-3 text-xs text-slate-400 dark:text-slate-500">
+      Patient stories on this page are part of the demo scenario — no screening tool cures
+      anything, and this one does not diagnose. See the limits below.
+    </p>
   </section>
 
   <!-- ══════════════════════════ THE TEAM ══════════════════════════ -->
