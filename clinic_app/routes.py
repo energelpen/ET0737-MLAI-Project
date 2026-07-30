@@ -80,6 +80,26 @@ CLINIC_LEAD = {
               "glucose test — using nothing but questions the clinic can already ask."),
 }
 
+# The clinic's benefactor. Part of the same fictional scenario as CLINIC_LEAD — the
+# funding story the demo is framed around, kept beside the other page content so the
+# About page reads from one source.
+CLINIC_OWNER = {
+    "name": "Mr. Arjun",
+    "role": "Owner & Angel Investor",
+    "photo": "owner.png",
+    "blurb": ("I have more money than I could spend in a hundred lifetimes. Putting some of it "
+              "into a clinic that catches diabetes early is the least interesting thing I do all "
+              "week, and easily the most useful."),
+    "ventures": [
+        {"name": "Orbital launch vehicles",
+         "detail": "A rocket company flying reusable boosters — the profits underwrite the clinic."},
+        {"name": "Electric vehicles",
+         "detail": "A car company whose entire safety division was lent to this project for a month."},
+        {"name": "Point-to-point teleportation",
+         "detail": "Still in closed beta. Clinic patients are promised first access to the network."},
+    ],
+}
+
 PROJECT_TEAM = [
     {"name": "Amon Saka Kaneko",              "focus": "Modelling & deployment pipeline"},
     {"name": "Suriyavarman s/o Jayavaraman",  "focus": "Data cleaning & feature justification"},
@@ -111,8 +131,8 @@ def landing():
 
 @bp.route("/about")
 def about():
-    return render_template("about.html", lead=CLINIC_LEAD, team=PROJECT_TEAM,
-                           model_facts=_model_facts())
+    return render_template("about.html", lead=CLINIC_LEAD, owner=CLINIC_OWNER,
+                           team=PROJECT_TEAM, model_facts=_model_facts())
 
 
 @bp.route("/home")

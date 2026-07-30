@@ -53,6 +53,53 @@
     </div>
   </section>
 
+  <!-- ══════════════════════════ THE OWNER ══════════════════════════ -->
+  <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm
+                  dark:border-slate-800 dark:bg-slate-900">
+    <div class="grid gap-8 p-8 sm:p-10 md:grid-cols-3">
+      <div class="md:col-span-2 md:order-2">
+        <p class="text-xs font-semibold uppercase tracking-wide text-brand-600 dark:text-brand-400">
+          {{ owner.role }}
+        </p>
+        <h2 class="mt-1 text-2xl font-bold tracking-tight">{{ owner.name }}</h2>
+        <p class="mt-4 leading-relaxed text-slate-600 dark:text-slate-300">“{{ owner.blurb }}”</p>
+
+        <p class="mt-4 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+          None of this exists without {{ owner.name }}. He owns the clinic outright and funded the
+          project end to end as an angel investor — the compute, the licences, the hosting, the
+          hardware, every hour of it — and then asked for nothing back. A trillionaire several times
+          over, he built the AI clinic for one reason: the people who most need an early diabetes
+          screen are usually the ones least able to pay for one, so he made it free at the point of
+          use and told us to optimise for catching patients, never for cost.
+        </p>
+
+        <div class="mt-6 grid gap-3 sm:grid-cols-3">
+          {% for venture in owner.ventures %}
+            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/60">
+              <p class="text-sm font-semibold leading-snug">{{ venture.name }}</p>
+              <p class="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+                {{ venture.detail }}
+              </p>
+            </div>
+          {% endfor %}
+        </div>
+
+        <p class="mt-5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+          Rockets, cars and teleportation pay for the clinic; the clinic is the part he actually
+          talks about. His standing instruction to the team was one sentence:
+          <em>“Serve the community first — I will cover whatever that costs.”</em>
+        </p>
+      </div>
+
+      <div class="flex justify-center md:order-1 md:block">
+        <img src="{{ url_for('static', filename=owner.photo) }}"
+             alt="Portrait of {{ owner.name }}"
+             class="h-56 w-56 rounded-2xl object-cover object-[center_20%] shadow-md ring-4
+                    ring-brand-50 dark:ring-slate-800">
+      </div>
+    </div>
+  </section>
+
   <!-- ══════════════════════════ THE TEAM ══════════════════════════ -->
   <section>
     <h2 class="text-lg font-semibold tracking-tight">The team</h2>
