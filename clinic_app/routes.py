@@ -136,8 +136,8 @@ PATIENT_FEEDBACK = {
 
 PROJECT_TEAM = [
     {"name": "Amon Saka Kaneko",              "focus": "Modelling & deployment pipeline"},
-    {"name": "Suriyavarman s/o Jayavaraman",  "focus": "Data cleaning & feature justification"},
-    {"name": "Alfred Hirudhaya Jeyeseelan Vijai", "focus": "Evaluation & fairness audit"},
+    {"name": "Suriyavarman s/o Jayavaraman",  "focus": "Evaluation & fairness audit"},
+    {"name": "Alfred Hirudhaya Jeyeseelan Vijai", "focus": "Data cleaning & feature justification"},
     {"name": "Javier Yeo Xu Bin",             "focus": "Web application & clinician tools"},
 ]
 
