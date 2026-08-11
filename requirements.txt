@@ -18,3 +18,5 @@ tinydb==4.8.2
 # Optional: enables the Claude AI assistant (patient & clinician briefings). The app
 # runs fine without it — set ANTHROPIC_API_KEY to switch the feature on.
 anthropic>=0.69.0
+
+# We used 3.14.2 Python. Only supported for Python 3.14.2
